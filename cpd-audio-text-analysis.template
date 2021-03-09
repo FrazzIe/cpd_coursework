@@ -140,7 +140,20 @@
                         "LambdaExecutionRole",
                         "Arn"
                     ]
-                }
+                },
+                "Runtime": "python3.8",
+                "Code": {
+                    "ZipFile": {
+                        "Fn::Join": [
+                            "\n",
+                            [
+                                "def handler_name(event, context):",
+                                "\tprint(event, context)"
+                            ]
+                        ]
+                    }
+                },
+                "Handler": "index.handler"
             },
             "Metadata": {
                 "AWS::CloudFormation::Designer": {
