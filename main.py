@@ -1,3 +1,4 @@
+import os
 import json
 import time
 import boto3
@@ -37,6 +38,14 @@ def stackExists(name):
 	}
 
 	return switch.get(status, True)
+
+def getAudioFiles():
+	audio = []
+	with os.scandir("input") as files:
+		for file in files:
+			if file.name.endswith(".mp3"):
+				audio.append(file.path)
+	return audio
 
 settings = loadJSON("settings.json")
 cfTemplate = loadJSON("{}.template".format(settings["stack"]))
