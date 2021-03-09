@@ -5,6 +5,7 @@ import boto3
 from botocore.exceptions import ClientError
 
 cloudFormation = boto3.client("cloudformation")
+s3 = boto3.client("s3")
 
 def loadJSON(path):
 	obj = None
@@ -80,3 +81,16 @@ while True:
 	time.sleep(1)
 	waitCount = waitCount + 1
 	print(">> [ {} ] Status: {}, Seconds elapsed: {}".format("/" if waitCount % 2 else "\\", currentStatus, waitCount), end = "\r")
+
+audioFiles = getAudioFiles()
+
+for file in audioFiles:
+	s3.upload_file(file, "{}-bucket".format(settings["stack"]), os.path.basename(file))
+	waitCount = 0
+	while True:
+		print(">> [ {} ] File: {}, Seconds elapsed: {}/30".format("/" if waitCount % 2 else "\\", file, waitCount), end = "\r")
+		if waitCount == 30:
+			print("\nFinished: {}".format(file))
+			break
+		time.sleep(1)
+		waitCount = waitCount + 1
