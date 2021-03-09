@@ -1,0 +1,195 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Metadata": {
+        "AWS::CloudFormation::Designer": {
+            "448812fb-8aa7-404f-a58b-01a7fdb47acb": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 170,
+                    "y": 280
+                },
+                "z": 0,
+                "embeds": []
+            },
+            "6b35d329-684e-424f-86af-ab6557c610db": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 370,
+                    "y": 280
+                },
+                "z": 0,
+                "embeds": []
+            },
+            "9e6caa8c-fd77-48c0-a326-44653b27ef36": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 530,
+                    "y": 410
+                },
+                "z": 0,
+                "embeds": []
+            },
+            "2acff2d4-89be-418f-b8cc-b300f0d072ae": {
+                "source": {
+                    "id": "448812fb-8aa7-404f-a58b-01a7fdb47acb"
+                },
+                "target": {
+                    "id": "6b35d329-684e-424f-86af-ab6557c610db"
+                },
+                "z": 1
+            },
+            "1a27ab89-fd49-4613-b424-101c61288880": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 530,
+                    "y": 280
+                },
+                "z": 0,
+                "embeds": []
+            },
+            "d4c5f48e-07aa-4936-a9b8-25c3806b649d": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 370,
+                    "y": 410
+                },
+                "z": 0,
+                "embeds": []
+            }
+        }
+    },
+    "Resources": {
+        "Queue": {
+            "Type": "AWS::SQS::Queue",
+            "Properties": {},
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "6b35d329-684e-424f-86af-ab6557c610db"
+                }
+            }
+        },
+        "Bucket": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+                "NotificationConfiguration": {
+                    "QueueConfigurations": [
+                        {
+                            "Event": "s3:ObjectCreated:*",
+                            "Filter": {},
+                            "Queue": {
+                                "Fn::GetAtt": [
+                                    "Queue",
+                                    "Arn"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "448812fb-8aa7-404f-a58b-01a7fdb47acb"
+                }
+            },
+            "DependsOn": []
+        },
+        "LambdaEventSourceMapping": {
+            "Type": "AWS::Lambda::EventSourceMapping",
+            "Properties": {
+                "Enabled": true,
+                "BatchSize": 10,
+                "EventSourceArn": {
+                    "Fn::GetAtt": [
+                        "Queue",
+                        "Arn"
+                    ]
+                },
+                "FunctionName": {
+                    "Fn::GetAtt": [
+                        "LambdaFunction",
+                        "Arn"
+                    ]
+                }
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "1a27ab89-fd49-4613-b424-101c61288880"
+                }
+            }
+        },
+        "LambdaFunction": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+                "Role": {
+                    "Fn::GetAtt": [
+                        "LambdaExecutionRole",
+                        "Arn"
+                    ]
+                }
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "9e6caa8c-fd77-48c0-a326-44653b27ef36"
+                }
+            }
+        },
+        "LambdaExecutionRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": "lambda.amazonaws.com"
+                            },
+                            "Action": "sts:AssumeRole"
+                        }
+                    ]
+                },
+                "Policies": [
+                    {
+                        "PolicyName": "allowSqs",
+                        "PolicyDocument": {
+                            "Statement": [
+                                {
+                                    "Action": [
+                                        "SQS:ReceiveMessage"
+                                    ],
+                                    "Effect": "Allow",
+                                    "Resource": {
+                                        "Fn::GetAtt": [
+                                            "Queue",
+                                            "Arn"
+                                        ]
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ]
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "d4c5f48e-07aa-4936-a9b8-25c3806b649d"
+                }
+            }
+        }
+    }
+}
