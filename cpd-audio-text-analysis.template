@@ -12,7 +12,10 @@
                     "y": 280
                 },
                 "z": 0,
-                "embeds": []
+                "embeds": [],
+                "dependson": [
+                    "73ef2899-7672-4218-8184-6322afea69ed"
+                ]
             },
             "6b35d329-684e-424f-86af-ab6557c610db": {
                 "size": {
@@ -38,15 +41,6 @@
                 "z": 0,
                 "embeds": []
             },
-            "2acff2d4-89be-418f-b8cc-b300f0d072ae": {
-                "source": {
-                    "id": "448812fb-8aa7-404f-a58b-01a7fdb47acb"
-                },
-                "target": {
-                    "id": "6b35d329-684e-424f-86af-ab6557c610db"
-                },
-                "z": 1
-            },
             "1a27ab89-fd49-4613-b424-101c61288880": {
                 "size": {
                     "width": 60,
@@ -70,6 +64,36 @@
                 },
                 "z": 0,
                 "embeds": []
+            },
+            "73ef2899-7672-4218-8184-6322afea69ed": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 370,
+                    "y": 120
+                },
+                "z": 0,
+                "embeds": []
+            },
+            "00195117-4131-4d5f-a7c0-e06b22fad3d6": {
+                "source": {
+                    "id": "448812fb-8aa7-404f-a58b-01a7fdb47acb"
+                },
+                "target": {
+                    "id": "73ef2899-7672-4218-8184-6322afea69ed"
+                },
+                "z": 11
+            },
+            "79daf5c4-f5f2-4961-a7a9-02d096ef2a1a": {
+                "source": {
+                    "id": "448812fb-8aa7-404f-a58b-01a7fdb47acb"
+                },
+                "target": {
+                    "id": "73ef2899-7672-4218-8184-6322afea69ed"
+                },
+                "z": 11
             }
         }
     },
@@ -86,11 +110,21 @@
         "Bucket": {
             "Type": "AWS::S3::Bucket",
             "Properties": {
+                "BucketName": "cpd-audio-text-analysis-bucket",
                 "NotificationConfiguration": {
                     "QueueConfigurations": [
                         {
                             "Event": "s3:ObjectCreated:*",
-                            "Filter": {},
+                            "Filter": {
+                                "S3Key": {
+                                    "Rules": [
+                                        {
+                                            "Name": "suffix",
+                                            "Value": ".mp3"
+                                        }
+                                    ]
+                                }
+                            },
                             "Queue": {
                                 "Fn::GetAtt": [
                                     "Queue",
@@ -106,7 +140,9 @@
                     "id": "448812fb-8aa7-404f-a58b-01a7fdb47acb"
                 }
             },
-            "DependsOn": []
+            "DependsOn": [
+                "QueuePolicy"
+            ]
         },
         "LambdaEventSourceMapping": {
             "Type": "AWS::Lambda::EventSourceMapping",
@@ -147,7 +183,7 @@
                         "Fn::Join": [
                             "\n",
                             [
-                                "def handler_name(event, context):",
+                                "def handler(event, context):",
                                 "\tprint(event, context)"
                             ]
                         ]
@@ -178,12 +214,28 @@
                 },
                 "Policies": [
                     {
+                        "PolicyName": "allowLambdaLogs",
+                        "PolicyDocument": {
+                            "Statement": [
+                                {
+                                    "Action": [
+                                        "LOGS:*"
+                                    ],
+                                    "Effect": "Allow",
+                                    "Resource": "arn:aws:logs:*:*:*"
+                                }
+                            ]
+                        }
+                    },
+                    {
                         "PolicyName": "allowSqs",
                         "PolicyDocument": {
                             "Statement": [
                                 {
                                     "Action": [
-                                        "SQS:ReceiveMessage"
+                                        "SQS:ReceiveMessage",
+                                        "SQS:DeleteMessage",
+                                        "SQS:GetQueueAttributes"
                                     ],
                                     "Effect": "Allow",
                                     "Resource": {
@@ -201,6 +253,54 @@
             "Metadata": {
                 "AWS::CloudFormation::Designer": {
                     "id": "d4c5f48e-07aa-4936-a9b8-25c3806b649d"
+                }
+            }
+        },
+        "QueuePolicy": {
+            "Type": "AWS::SQS::QueuePolicy",
+            "Properties": {
+                "Queues": [
+                    {
+                        "Ref": "Queue"
+                    }
+                ],
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": "s3.amazonaws.com"
+                            },
+                            "Action": [
+                                "SQS:SendMessage"
+                            ],
+                            "Resource": {
+                                "Fn::GetAtt": [
+                                    "Queue",
+                                    "Arn"
+                                ]
+                            },
+                            "Condition": {
+                                "ArnLike": {
+                                    "aws:SourceArn": {
+                                        "Fn::Join": [
+                                            "",
+                                            [
+                                                "arn:aws:s3:::",
+                                                "cpd-audio-text-analysis-bucket"
+                                            ]
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "73ef2899-7672-4218-8184-6322afea69ed"
                 }
             }
         }
