@@ -44,4 +44,19 @@ if stackExists(settings["stack"]):
 	print("Stack already exists: {}".format(settings["stack"]))
 	raise SystemExit
 
-print("doesn't exist cont")
+stackId = cloudFormation.create_stack(
+	StackName = settings["stack"],
+	TemplateBody = cfTemplate,
+	DisableRollback = False,
+	RollbackConfiguration = {
+		"RollbackTriggers": [
+			{
+				"Arn": "string",
+				"Type": "string"
+			}
+		],
+		MonitoringTimeInMinutes: 15
+	},
+	TimeoutInMinutes = 15
+	OnFailure = "DELETE"
+)
