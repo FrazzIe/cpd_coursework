@@ -38,7 +38,7 @@ def stackExists(name):
 	return switch.get(status, True)
 
 settings = loadJSON("settings.json")
-cfTemplate = loadJSON("template.json")
+cfTemplate = loadJSON("{}.template".format(settings["stack"]))
 
 if stackExists(settings["stack"]):
 	print("Stack already exists: {}".format(settings["stack"]))
