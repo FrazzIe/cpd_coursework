@@ -1,4 +1,5 @@
 import json
+import time
 import boto3
 from botocore.exceptions import ClientError
 
@@ -60,3 +61,22 @@ stackId = cloudFormation.create_stack(
 	TimeoutInMinutes = 15
 	OnFailure = "DELETE"
 )
+
+waitCount = 0
+updateTime = 5
+currentStatus = None
+
+while True:
+	if waitCount % updateTime == 0:
+		currentStatus = stackStatus(settings["stack"])
+		exists = stackExists(settings["stack"])
+
+		if exists and status == "CREATE_COMPLETE":
+			print("\nStack created!")
+			break
+		elif not exists:
+			print("\nStack creation failed.. terminating")
+			raise SystemExit
+	time.sleep(1)
+	waitCount = waitCount + 1
+	print(">> [ {} ] Status: {}, Seconds elapsed: {}".format("/" if waitCount % 2 else "\\", currentStatus, waitCount), end = "\r")
