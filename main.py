@@ -56,19 +56,10 @@ if stackExists(settings["stack"]):
 
 stackId = cloudFormation.create_stack(
 	StackName = settings["stack"],
-	TemplateBody = cfTemplate,
-	DisableRollback = False,
-	RollbackConfiguration = {
-		"RollbackTriggers": [
-			{
-				"Arn": "string",
-				"Type": "string"
-			}
-		],
-		MonitoringTimeInMinutes: 15
-	},
-	TimeoutInMinutes = 15
-	OnFailure = "DELETE"
+	TemplateBody = json.dumps(cfTemplate),
+	TimeoutInMinutes = 15,
+	OnFailure = "DO_NOTHING",
+	Capabilities = [ "CAPABILITY_NAMED_IAM" ]
 )
 
 waitCount = 0
