@@ -71,7 +71,7 @@ while True:
 		currentStatus = stackStatus(settings["stack"])
 		exists = stackExists(settings["stack"])
 
-		if exists and status == "CREATE_COMPLETE":
+		if exists and currentStatus == "CREATE_COMPLETE":
 			print("\nStack created!")
 			break
 		elif not exists:
