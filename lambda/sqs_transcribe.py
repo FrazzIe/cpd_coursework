@@ -11,6 +11,10 @@ def getEventData(event):
 	except Exception:
 		print("Something went wrong when fetching event data!")
 		raise SystemExit
+
+def getBucketUri(bucket, file):
+	return "s3://{}/{}".format(bucket, file)
+
 def handler(event, context):
 	if not event:
 		raise SystemExit
