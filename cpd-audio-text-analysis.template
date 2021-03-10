@@ -247,6 +247,20 @@
                                 }
                             ]
                         }
+                    },
+                    {
+                        "PolicyName": "allowTranscribe",
+                        "PolicyDocument": {
+                            "Statement": [
+                                {
+                                    "Action": [
+                                        "transcribe:StartTranscriptionJob",
+                                    ],
+                                    "Effect": "Allow",
+                                    "Resource": "*"
+                                }
+                            ]
+                        }
                     }
                 ]
             },
