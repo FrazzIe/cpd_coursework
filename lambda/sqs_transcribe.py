@@ -3,6 +3,7 @@
 
 import boto3
 import json
+from botocore.exceptions import ClientError
 
 def getEventData(event):
 	try:
@@ -15,6 +16,12 @@ def getEventData(event):
 def getBucketUri(bucket, file):
 	return "s3://{}/{}".format(bucket, file.replace("%5C", "/"))
 
+def getTranscriptionStatus(ts, job):
+	try:
+		data = ts.get_transcription_job(TranscriptionJobName = job)
+	except ClientError:
+		return "CLIENT_ERROR"
+	return data["TranscriptionJob"]["TranscroptionJobStatus"]
 def handler(event, context):
 	if not event:
 		raise SystemExit
