@@ -301,6 +301,20 @@
                                 }
                             ]
                         }
+                    },
+                    {
+                        "PolicyName": "allowComprehend",
+                        "PolicyDocument": {
+                            "Statement": [
+                                {
+                                    "Action": [
+                                        "comprehend:DetectSentiment"
+                                    ],
+                                    "Effect": "Allow",
+                                    "Resource": "*"
+                                }
+                            ]
+                        }
                     }
                 ]
             },
