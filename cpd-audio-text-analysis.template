@@ -335,8 +335,6 @@
         "Queue": {
             "Type": "AWS::SQS::Queue",
             "Properties": {
-                "FifoQueue": true,
-                "ContentBasedDeduplication": true,
                 "DelaySeconds": 0,
                 "VisibilityTimeout": 120
             },
