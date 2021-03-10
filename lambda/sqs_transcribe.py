@@ -32,3 +32,13 @@ def handler(event, context):
 		raise SystemExit
 
 	uri = getBucketUri(bucket, file)
+	ts = boto3.client("transcribe")
+	ts.start_transcription_job(
+		TranscriptionJobName = job,
+		Media = {
+			"MediaFileUri": uri
+		},
+		MediaFormat = "mp3",
+		LanguageCode = "en-GB",
+		OutputBucketName = bucket,
+	)
