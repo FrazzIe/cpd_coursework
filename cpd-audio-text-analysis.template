@@ -117,7 +117,7 @@
                 }
             },
             "DependsOn": [
-                "QueuePolicy"
+                "AudioQueuePolicy"
             ]
         },
         "TranscribeEventSourceMapping": {
@@ -207,7 +207,8 @@
                         ]
                     }
                 },
-                "Handler": "index.handler"
+                "Handler": "index.handler",
+                "Timeout": 60
             },
             "Metadata": {
                 "AWS::CloudFormation::Designer": {
@@ -328,7 +329,19 @@
                 }
             }
         },
-        "QueuePolicy": {
+        "AudioQueue": {
+            "Type": "AWS::SQS::Queue",
+            "Properties": {
+                "DelaySeconds": 0,
+                "VisibilityTimeout": 120
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "6b35d329-684e-424f-86af-ab6557c610db"
+                }
+            }
+        },
+        "AudioQueuePolicy": {
             "Type": "AWS::SQS::QueuePolicy",
             "Properties": {
                 "Queues": [
@@ -373,15 +386,6 @@
             "Metadata": {
                 "AWS::CloudFormation::Designer": {
                     "id": "73ef2899-7672-4218-8184-6322afea69ed"
-                }
-            }
-        },
-        "AudioQueue": {
-            "Type": "AWS::SQS::Queue",
-            "Properties": {},
-            "Metadata": {
-                "AWS::CloudFormation::Designer": {
-                    "id": "6b35d329-684e-424f-86af-ab6557c610db"
                 }
             }
         }
