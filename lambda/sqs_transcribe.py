@@ -7,6 +7,7 @@ import time
 from botocore.exceptions import ClientError
 
 transcriptDir = "transcriptions/"
+ts = boto3.client("transcribe")
 
 def getEventData(event):
 	try:
@@ -21,16 +22,16 @@ def getEventData(event):
 def getBucketUri(bucket, file):
 	return "s3://{}/{}".format(bucket, file.replace("%5C", "/"))
 
-def getTranscriptionStatus(ts, job):
+def getTranscriptionStatus(job):
 	try:
 		data = ts.get_transcription_job(TranscriptionJobName = job)
-	except ClientError:
+	except ClientError as error:
+		print(error)
 		return "CLIENT_ERROR"
-	return data["TranscriptionJob"]["TranscroptionJobStatus"]
+	return data["TranscriptionJob"]["TranscriptionJobStatus"]
 
 def startTranscriptionJob(bucket, file, job):
 	uri = getBucketUri(bucket, file)
-	ts = boto3.client("transcribe")
 	ts.start_transcription_job(
 		TranscriptionJobName = job,
 		Media = {
@@ -44,7 +45,7 @@ def startTranscriptionJob(bucket, file, job):
 
 	states = ["COMPLETED", "FAILED", "CLIENT_ERROR"]
 	while True:
-		status = getTranscriptionStatus(ts, job)
+		status = getTranscriptionStatus(job)
 		if status in states:
 			break
 		time.sleep(5)
@@ -77,7 +78,12 @@ def handler(event, context):
 	status = startTranscriptionJob(bucket, file, job)
 
 	if status != "COMPLETED":
-		print("Transcription {} is incomplete with status: {}".format(job, status))
+		msg = "Transcription {} is incomplete with status: {}".format(job, status)
+		print(msg)
+		return {
+			"statusCode": 500,
+			"body": json.dumps(msg)
+		}
 		raise SystemExit
 
 	return {
