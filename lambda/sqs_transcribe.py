@@ -11,10 +11,12 @@ transcriptDir = "transcriptions/"
 def getEventData(event):
 	try:
 		data = json.loads(event["Records"][0]["body"])
-		return data["Records"][0]
+		if "Event" in data:
+			if data["Event"] == "s3:TestEvent":
+				return True, "Ignore test event"
+		return False, data["Records"][0]
 	except Exception:
-		print("Something went wrong when fetching event data!")
-		raise SystemExit
+		return True, "Something went wrong when fetching event data!"
 
 def getBucketUri(bucket, file):
 	return "s3://{}/{}".format(bucket, file.replace("%5C", "/"))
@@ -52,7 +54,15 @@ def handler(event, context):
 	if not event:
 		raise SystemExit
 
-	data = getEventData(event)
+	err, data = getEventData(event)
+
+	if err:
+		print("Error occurred: {}".format(data))
+		return {
+			"statusCode": 500,
+			"body": json.dumps("Error occurred: {}".format(data))
+		}
+
 	bucket = data["s3"]["bucket"]["name"]
 	file = data["s3"]["object"]["key"]
 	job = context.aws_request_id
