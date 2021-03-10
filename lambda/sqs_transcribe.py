@@ -3,7 +3,10 @@
 
 import boto3
 import json
+import time
 from botocore.exceptions import ClientError
+
+transcriptDir = "transcriptions/"
 
 def getEventData(event):
 	try:
@@ -22,6 +25,29 @@ def getTranscriptionStatus(ts, job):
 	except ClientError:
 		return "CLIENT_ERROR"
 	return data["TranscriptionJob"]["TranscroptionJobStatus"]
+
+def startTranscriptionJob(bucket, file, job):
+	uri = getBucketUri(bucket, file)
+	ts = boto3.client("transcribe")
+	ts.start_transcription_job(
+		TranscriptionJobName = job,
+		Media = {
+			"MediaFileUri": uri
+		},
+		MediaFormat = "mp3",
+		LanguageCode = "en-GB",
+		OutputBucketName = bucket,
+		OutputKey = transcriptDir
+	)
+
+	states = ["COMPLETED", "FAILED", "CLIENT_ERROR"]
+	while True:
+		status = getTranscriptionStatus(ts, job)
+		if status in states:
+			break
+		time.sleep(5)
+	return status
+
 def handler(event, context):
 	if not event:
 		raise SystemExit
@@ -38,18 +64,11 @@ def handler(event, context):
 		print("Couldn't find job id")
 		raise SystemExit
 
-	uri = getBucketUri(bucket, file)
-	ts = boto3.client("transcribe")
-	ts.start_transcription_job(
-		TranscriptionJobName = job,
-		Media = {
-			"MediaFileUri": uri
-		},
-		MediaFormat = "mp3",
-		LanguageCode = "en-GB",
-		OutputBucketName = bucket,
-		OutputKey = "transcriptions/"
-	)
+	status = startTranscriptionJob(bucket, file, job)
+
+	if status != "COMPLETED":
+		print("Transcription {} is incomplete with status: {}".format(job, status))
+		raise SystemExit
 
 	return {
 		"statusCode": 200,
