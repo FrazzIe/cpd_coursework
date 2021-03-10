@@ -90,6 +90,12 @@ def deleteTranscript(job):
 	except Exception as error:
 		print(error)
 		return True, error
+
+def getTranscriptText(transcript):
+	try:
+		return False, transcript["results"]["transcripts"][0]["transcript"]
+	except Exception:
+		return True, "Couldn't get transcript text!"
 def handler(event, context):
 	if not event:
 		return {
