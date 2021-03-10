@@ -253,7 +253,8 @@
                                 {
                                     "Action": [
                                         "transcribe:StartTranscriptionJob",
-                                        "transcribe:GetTranscriptionJob"
+                                        "transcribe:GetTranscriptionJob",
+                                        "transcribe:DeleteTranscriptionJob"
                                     ],
                                     "Effect": "Allow",
                                     "Resource": "*"

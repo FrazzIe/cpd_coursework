@@ -33,6 +33,7 @@ def getTranscriptionStatus(job):
 
 def startTranscriptionJob(bucket, file, job):
 	uri = getBucketUri(bucket, file)
+
 	ts.start_transcription_job(
 		TranscriptionJobName = job,
 		Media = {
@@ -51,6 +52,17 @@ def startTranscriptionJob(bucket, file, job):
 			break
 		time.sleep(5)
 	return status
+
+def deleteTranscriptionJob(job):
+	try:
+		ts.delete_transcription_job(TranscriptionJobName = job)
+		return False, ""
+	except ClientError as error:
+		print(error)
+		return True, error
+	except Exception as error:
+		print(error)
+		return True, error
 
 def fetchTranscript(bucket, job):
 	bucketPath = "{}{}.json".format(transcriptDir, job)
@@ -113,6 +125,16 @@ def handler(event, context):
 
 	if err:
 		msg = "Error occurred: {}".format(transcript)
+		print(msg)
+		return {
+			"statusCode": 500,
+			"body": json.dumps(msg)
+		}
+
+	err, errMsg = deleteTranscriptionJob(job)
+
+	if err:
+		msg = "Error occurred: {}".format(errMsg)
 		print(msg)
 		return {
 			"statusCode": 500,
