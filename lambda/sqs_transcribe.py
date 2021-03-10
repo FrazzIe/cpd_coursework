@@ -2,13 +2,17 @@
 # Called after S3 Bucket sends a notification to SQS
 
 import boto3
+import json
 
-def handler(event, content):
-	if event:
-		try:
-			obj = event["Records"][0]
-			bucket = obj["s3"]["bucket"]["name"]
-			file = obj["s3"]["object"]["key"]
-			print(bucket, file, sep = ", ")
-		except Exception:
-			raise SystemExit
+def getEventData(event):
+	try:
+		data = json.loads(event["Records"][0]["body"])
+		return data["Records"][0]
+	except Exception:
+		print("Something went wrong when fetching event data!")
+		raise SystemExit
+def handler(event, context):
+	if not event:
+		raise SystemExit
+
+	data = getEventData(event)
