@@ -114,7 +114,7 @@
                                     "Rules": [
                                         {
                                             "Name": "prefix",
-                                            "Value": "/audio"
+                                            "Value": "audio/"
                                         },
                                         {
                                             "Name": "suffix",
