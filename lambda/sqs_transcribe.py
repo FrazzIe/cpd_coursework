@@ -10,6 +10,7 @@ from botocore.exceptions import ClientError
 transcriptDir = "transcriptions/"
 ts = boto3.client("transcribe")
 s3 = boto3.client("s3")
+comp = boto3.client("comprehend")
 
 def getEventData(event):
 	try:
@@ -96,6 +97,23 @@ def getTranscriptText(transcript):
 		return False, transcript["results"]["transcripts"][0]["transcript"]
 	except Exception:
 		return True, "Couldn't get transcript text!"
+
+def getSentimentAnalysis(transcript):
+	err, text = getTranscriptText(transcript)
+
+	if err:
+		return True, text
+
+	try:
+		sentiment = comp.detect_sentiment(
+			Text = text,
+			LanguageCode = "en"
+		)
+		return False, sentiment
+	except ClientError as error:
+		print(error)
+		return True, error
+
 def handler(event, context):
 	if not event:
 		return {
@@ -167,6 +185,7 @@ def handler(event, context):
 			"body": json.dumps(msg)
 		}
 
+	err, sentiment = getSentimentAnalysis(transcript)
 
 	return {
 		"statusCode": 200,
