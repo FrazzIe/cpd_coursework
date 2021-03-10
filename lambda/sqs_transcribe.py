@@ -1,6 +1,7 @@
 # Snippet from CloudFormation template
 # Called after S3 Bucket sends a notification to SQS
 
+import os
 import boto3
 import json
 import time
@@ -80,6 +81,15 @@ def fetchTranscript(bucket, job):
 		print(error)
 		return True, "An error occured when fetching the transcript"
 
+def deleteTranscript(job):
+	filePath = "/tmp/{}.json".format(job)
+
+	try:
+		os.remove(filePath)
+		return False, ""
+	except Exception as error:
+		print(error)
+		return True, error
 def handler(event, context):
 	if not event:
 		return {
@@ -141,7 +151,15 @@ def handler(event, context):
 			"body": json.dumps(msg)
 		}
 
-	print(transcript)
+	err, errMsg = deleteTranscript(job)
+
+	if err:
+		msg = "Error occurred: {}".format(errMsg)
+		print(msg)
+		return {
+			"statusCode": 500,
+			"body": json.dumps(msg)
+		}
 
 
 	return {
