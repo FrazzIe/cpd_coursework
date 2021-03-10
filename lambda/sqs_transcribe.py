@@ -8,6 +8,7 @@ from botocore.exceptions import ClientError
 
 transcriptDir = "transcriptions/"
 ts = boto3.client("transcribe")
+s3 = boto3.client("s3")
 
 def getEventData(event):
 	try:
@@ -51,6 +52,22 @@ def startTranscriptionJob(bucket, file, job):
 		time.sleep(5)
 	return status
 
+def fetchTranscript(bucket, job):
+	bucketPath = "{}{}.json".format(transcriptDir, job)
+	filePath = "/tmp/{}.json".format(job)
+
+	try:
+		s3.download_file(bucket, bucketPath, filePath)
+		try:
+			with open(filePath, "r") as file:
+				data = file.read()
+				return False, json.loads(data)
+		except FileNotFoundError:
+			return True, "Transcript file not found"
+	except ClientError as error:
+		print(error)
+		return True, "An error occured when fetching the transcript"
+
 def handler(event, context):
 	if not event:
 		return {
@@ -92,16 +109,18 @@ def handler(event, context):
 			"body": json.dumps(msg)
 		}
 
-	s3 = boto3.client("s3")
-	transcript = None
+	err, transcript = fetchTranscript(bucket, job)
 
-	try:
-		with open("filename", "wb") as data:
-			s3.download_fileobj(bucket, "{}{}.json".format(transcriptDir, job), data)
-			print(data)
-	except ClientError as error:
-		print(error)
-		print("An error occured when fetching the transcript")
+	if err:
+		msg = "Error occurred: {}".format(transcript)
+		print(msg)
+		return {
+			"statusCode": 500,
+			"body": json.dumps(msg)
+		}
+
+	print(transcript)
+
 
 	return {
 		"statusCode": 200,
