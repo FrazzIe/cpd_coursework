@@ -254,7 +254,7 @@
                             "Statement": [
                                 {
                                     "Action": [
-                                        "transcribe:StartTranscriptionJob",
+                                        "transcribe:StartTranscriptionJob"
                                     ],
                                     "Effect": "Allow",
                                     "Resource": "*"
