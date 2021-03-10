@@ -281,29 +281,6 @@
                                                         "Arn"
                                                     ]
                                                 },
-                                                "audio",
-                                                "*"
-                                            ]
-                                        ]
-                                    }
-                                },
-                                {
-                                    "Action": [
-                                        "S3:GetObject",
-                                        "S3:PutObject"
-                                    ],
-                                    "Effect": "Allow",
-                                    "Resource": {
-                                        "Fn::Join": [
-                                            "/",
-                                            [
-                                                {
-                                                    "Fn::GetAtt": [
-                                                        "Bucket",
-                                                        "Arn"
-                                                    ]
-                                                },
-                                                "transcriptions",
                                                 "*"
                                             ]
                                         ]
