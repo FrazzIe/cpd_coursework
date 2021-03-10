@@ -53,7 +53,10 @@ def startTranscriptionJob(bucket, file, job):
 
 def handler(event, context):
 	if not event:
-		raise SystemExit
+		return {
+			"statusCode": 500,
+			"body": json.dumps("Event undefined")
+		}
 
 	err, data = getEventData(event)
 
@@ -69,11 +72,15 @@ def handler(event, context):
 	job = context.aws_request_id
 
 	if not bucket or not file:
-		print("Couldn't find bucket/file")
-		raise SystemExit
+		return {
+			"statusCode": 500,
+			"body": json.dumps("Couldn't find bucket/file")
+		}
 	elif not job:
-		print("Couldn't find job id")
-		raise SystemExit
+		return {
+			"statusCode": 500,
+			"body": json.dumps("Couldn't find job id")
+		}
 
 	status = startTranscriptionJob(bucket, file, job)
 
@@ -84,7 +91,17 @@ def handler(event, context):
 			"statusCode": 500,
 			"body": json.dumps(msg)
 		}
-		raise SystemExit
+
+	s3 = boto3.client("s3")
+	transcript = None
+
+	try:
+		with open("filename", "wb") as data:
+			s3.download_fileobj(bucket, "{}{}.json".format(transcriptDir, job), data)
+			print(data)
+	except ClientError as error:
+		print(error)
+		print("An error occured when fetching the transcript")
 
 	return {
 		"statusCode": 200,
