@@ -13,7 +13,7 @@ def getEventData(event):
 		raise SystemExit
 
 def getBucketUri(bucket, file):
-	return "s3://{}/{}".format(bucket, file)
+	return "s3://{}/{}".format(bucket, file.replace("%5C", "/"))
 
 def handler(event, context):
 	if not event:
@@ -41,4 +41,10 @@ def handler(event, context):
 		MediaFormat = "mp3",
 		LanguageCode = "en-GB",
 		OutputBucketName = bucket,
+		OutputKey = "transcriptions/"
 	)
+
+	return {
+		"statusCode": 200,
+		"body": json.dumps("Transcription {} created".format(job))
+	}

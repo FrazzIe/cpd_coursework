@@ -85,7 +85,7 @@ while True:
 audioFiles = getAudioFiles()
 
 for file in audioFiles:
-	s3.upload_file(file, "{}-bucket".format(settings["stack"]), os.path.basename(file))
+	s3.upload_file(file, "{}-bucket".format(settings["stack"]), "audio/{}".format(os.path.basename(file)))
 	waitCount = 0
 	while True:
 		print(">> [ {} ] File: {}, Seconds elapsed: {}/30".format("/" if waitCount % 2 else "\\", file, waitCount), end = "\r")
