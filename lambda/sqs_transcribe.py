@@ -20,3 +20,15 @@ def handler(event, context):
 		raise SystemExit
 
 	data = getEventData(event)
+	bucket = data["s3"]["bucket"]["name"]
+	file = data["s3"]["object"]["key"]
+	job = context.aws_request_id
+
+	if not bucket or not file:
+		print("Couldn't find bucket/file")
+		raise SystemExit
+	elif not job:
+		print("Couldn't find job id")
+		raise SystemExit
+
+	uri = getBucketUri(bucket, file)
