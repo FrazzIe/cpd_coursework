@@ -75,38 +75,14 @@
                     "y": 120
                 },
                 "z": 0,
-                "embeds": []
-            },
-            "00195117-4131-4d5f-a7c0-e06b22fad3d6": {
-                "source": {
-                    "id": "448812fb-8aa7-404f-a58b-01a7fdb47acb"
-                },
-                "target": {
-                    "id": "73ef2899-7672-4218-8184-6322afea69ed"
-                },
-                "z": 11
-            },
-            "79daf5c4-f5f2-4961-a7a9-02d096ef2a1a": {
-                "source": {
-                    "id": "448812fb-8aa7-404f-a58b-01a7fdb47acb"
-                },
-                "target": {
-                    "id": "73ef2899-7672-4218-8184-6322afea69ed"
-                },
-                "z": 11
+                "embeds": [],
+                "isassociatedwith": [
+                    "6b35d329-684e-424f-86af-ab6557c610db"
+                ]
             }
         }
     },
     "Resources": {
-        "Queue": {
-            "Type": "AWS::SQS::Queue",
-            "Properties": {},
-            "Metadata": {
-                "AWS::CloudFormation::Designer": {
-                    "id": "6b35d329-684e-424f-86af-ab6557c610db"
-                }
-            }
-        },
         "Bucket": {
             "Type": "AWS::S3::Bucket",
             "Properties": {
@@ -127,7 +103,7 @@
                             },
                             "Queue": {
                                 "Fn::GetAtt": [
-                                    "Queue",
+                                    "AudioQueue",
                                     "Arn"
                                 ]
                             }
@@ -144,20 +120,20 @@
                 "QueuePolicy"
             ]
         },
-        "LambdaEventSourceMapping": {
+        "TranscribeEventSourceMapping": {
             "Type": "AWS::Lambda::EventSourceMapping",
             "Properties": {
                 "Enabled": true,
                 "BatchSize": 10,
                 "EventSourceArn": {
                     "Fn::GetAtt": [
-                        "Queue",
+                        "AudioQueue",
                         "Arn"
                     ]
                 },
                 "FunctionName": {
                     "Fn::GetAtt": [
-                        "LambdaFunction",
+                        "TranscribeFunction",
                         "Arn"
                     ]
                 }
@@ -168,12 +144,12 @@
                 }
             }
         },
-        "LambdaFunction": {
+        "TranscribeFunction": {
             "Type": "AWS::Lambda::Function",
             "Properties": {
                 "Role": {
                     "Fn::GetAtt": [
-                        "LambdaExecutionRole",
+                        "TranscribeExecutionRole",
                         "Arn"
                     ]
                 },
@@ -183,8 +159,50 @@
                         "Fn::Join": [
                             "\n",
                             [
+                                "# Snippet from CloudFormation template",
+                                "# Called after S3 Bucket sends a notification to SQS",
+                                "",
+                                "import boto3",
+                                "import json",
+                                "",
+                                "def getEventData(event):",
+                                "\ttry:",
+                                "\t\tdata = json.loads(event[\"Records\"][0][\"body\"])",
+                                "\t\treturn data[\"Records\"][0]",
+                                "\texcept Exception:",
+                                "\t\tprint(\"Something went wrong when fetching event data!\")",
+                                "\t\traise SystemExit",
+                                "",
+                                "def getBucketUri(bucket, file):",
+                                "\treturn \"s3://{}/{}\".format(bucket, file)",
+                                "",
                                 "def handler(event, context):",
-                                "\tprint(event, context)"
+                                "\tif not event:",
+                                "\t\traise SystemExit",
+                                "",
+                                "\tdata = getEventData(event)",
+                                "\tbucket = data[\"s3\"][\"bucket\"][\"name\"]",
+                                "\tfile = data[\"s3\"][\"object\"][\"key\"]",
+                                "\tjob = context.aws_request_id",
+                                "",
+                                "\tif not bucket or not file:",
+                                "\t\tprint(\"Couldn't find bucket/file\")",
+                                "\t\traise SystemExit",
+                                "\telif not job:",
+                                "\t\tprint(\"Couldn't find job id\")",
+                                "\t\traise SystemExit",
+                                "",
+                                "\turi = getBucketUri(bucket, file)",
+                                "\tts = boto3.client(\"transcribe\")",
+                                "\tts.start_transcription_job(",
+                                "\t\tTranscriptionJobName = job,",
+                                "\t\tMedia = {",
+                                "\t\t\t\"MediaFileUri\": uri",
+                                "\t\t},",
+                                "\t\tMediaFormat = \"mp3\",",
+                                "\t\tLanguageCode = \"en-GB\",",
+                                "\t\tOutputBucketName = bucket,",
+                                "\t)"
                             ]
                         ]
                     }
@@ -197,7 +215,7 @@
                 }
             }
         },
-        "LambdaExecutionRole": {
+        "TranscribeExecutionRole": {
             "Type": "AWS::IAM::Role",
             "Properties": {
                 "AssumeRolePolicyDocument": {
@@ -240,7 +258,7 @@
                                     "Effect": "Allow",
                                     "Resource": {
                                         "Fn::GetAtt": [
-                                            "Queue",
+                                            "AudioQueue",
                                             "Arn"
                                         ]
                                     }
@@ -261,6 +279,46 @@
                                 }
                             ]
                         }
+                    },
+                    {
+                        "PolicyName": "allowS3",
+                        "PolicyDocument": {
+                            "Statement": [
+                                {
+                                    "Action": [
+                                        "S3:GetObject",
+                                        "S3:PutObject"
+                                    ],
+                                    "Effect": "Allow",
+                                    "Resource": {
+                                        "Fn::Join": [
+                                            "/",
+                                            [
+                                                {
+                                                    "Fn::GetAtt": [
+                                                        "Bucket",
+                                                        "Arn"
+                                                    ]
+                                                },
+                                                "*"
+                                            ]
+                                        ]
+                                    }
+                                },
+                                {
+                                    "Action": [
+                                        "S3:ListBucket"
+                                    ],
+                                    "Effect": "Allow",
+                                    "Resource": {
+                                        "Fn::GetAtt": [
+                                            "Bucket",
+                                            "Arn"
+                                        ]
+                                    }
+                                }
+                            ]
+                        }
                     }
                 ]
             },
@@ -275,7 +333,7 @@
             "Properties": {
                 "Queues": [
                     {
-                        "Ref": "Queue"
+                        "Ref": "AudioQueue"
                     }
                 ],
                 "PolicyDocument": {
@@ -291,7 +349,7 @@
                             ],
                             "Resource": {
                                 "Fn::GetAtt": [
-                                    "Queue",
+                                    "AudioQueue",
                                     "Arn"
                                 ]
                             },
@@ -315,6 +373,15 @@
             "Metadata": {
                 "AWS::CloudFormation::Designer": {
                     "id": "73ef2899-7672-4218-8184-6322afea69ed"
+                }
+            }
+        },
+        "AudioQueue": {
+            "Type": "AWS::SQS::Queue",
+            "Properties": {},
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "6b35d329-684e-424f-86af-ab6557c610db"
                 }
             }
         }
