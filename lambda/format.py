@@ -2,6 +2,7 @@
 
 import os
 import json
+import python_minifier
 
 scriptName = os.path.basename(__file__)
 scriptDir = os.path.dirname(__file__)
@@ -32,7 +33,8 @@ def populateFile(lines):
 
 for script in getFiles():
 	with open(script["path"], "r") as file:
-		data = populateFile(file.readlines())
+		minified = python_minifier.awslambda(file.read())
+		data = populateFile(minified.splitlines())
 		name = getFileName(script["name"])
 		with open(os.path.join(outputDir, name), "w") as outfile:
 			json.dump(data, outfile, indent = 4)
