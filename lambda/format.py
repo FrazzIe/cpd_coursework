@@ -33,7 +33,7 @@ def populateFile(lines):
 
 for script in getFiles():
 	with open(script["path"], "r") as file:
-		minified = python_minifier.awslambda(file.read())
+		minified = python_minifier.minify(file.read(), remove_literal_statements=True, rename_globals=True, preserve_globals=["handler"])
 		data = populateFile(minified.splitlines())
 		name = getFileName(script["name"])
 		with open(os.path.join(outputDir, name), "w") as outfile:
