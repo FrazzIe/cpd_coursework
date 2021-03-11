@@ -4,6 +4,10 @@ import os
 import json
 import python_minifier
 
+# Gets a file name without the extension
+def getFileName(name):
+	obj = os.path.splitext(name)
+	return obj[0]
 
 # Gets a list of a *.py files in the lambda function directory
 def getFiles(srcDir):
@@ -18,10 +22,6 @@ def getFiles(srcDir):
 			if file.name.endswith(".py"):
 				py.append({ "path": file.path, "name": getFileName(file.name) })
 	return py
-
-def getFileName(name):
-	obj = os.path.splitext(name)
-	return obj[0] + ".json"
 
 def getFileStruct():
 	return { "Fn::Join": ["\n", []]	}
