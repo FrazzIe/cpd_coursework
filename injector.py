@@ -23,9 +23,11 @@ def getFiles(srcDir):
 				py.append({ "path": file.path, "name": getFileName(file.name) })
 	return py
 
+# Gets the lambda function ZipFile structure
 def getFileStruct():
 	return { "Fn::Join": ["\n", []]	}
 
+# Populates the lambda function ZipFile
 def populateFile(lines):
 	obj = getFileStruct()
 	for line in lines:
