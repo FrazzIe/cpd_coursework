@@ -35,6 +35,13 @@ def populateFile(lines):
 
 	return obj
 
+# Minify *.py code to not exceed the 4096 bytes limit
+def minifyScript(code):
+	try:
+		return python_minifier.minify(code, remove_literal_statements = True, rename_globals = True, preserve_globals = [ "handler" ])
+	except Exception:
+		print("Error: lambda code minification failed")
+	return "#An error occured here"
 
 # Injects minified lambda function code into a CloudFormation template
 def injectLambdaCode(path, template):
