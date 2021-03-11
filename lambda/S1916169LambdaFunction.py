@@ -4,7 +4,7 @@
 import os
 import boto3
 import json
-import time
+from time import sleep
 import re
 from botocore.exceptions import ClientError
 
@@ -15,6 +15,7 @@ comp = boto3.client("comprehend")
 db = boto3.client("dynamodb")
 sns = boto3.client("sns")
 
+# Get the notification payload from the event data
 def getEventData(event):
 	try:
 		data = json.loads(event["Records"][0]["body"])
@@ -25,9 +26,11 @@ def getEventData(event):
 	except Exception:
 		return True, "Something went wrong when fetching event data!"
 
+# Get file location on a S3 Bucket
 def getBucketUri(bucket, file):
 	return "s3://{}/{}".format(bucket, file.replace("%5C", "/"))
 
+# Get the current status of a transcribe job
 def getTranscriptionStatus(job):
 	try:
 		data = ts.get_transcription_job(TranscriptionJobName = job)
@@ -36,6 +39,7 @@ def getTranscriptionStatus(job):
 		return "CLIENT_ERROR"
 	return data["TranscriptionJob"]["TranscriptionJobStatus"]
 
+# Initiate a transcribe job and wait for it to be completed
 def startTranscriptionJob(bucket, file, job):
 	uri = getBucketUri(bucket, file)
 
@@ -55,9 +59,10 @@ def startTranscriptionJob(bucket, file, job):
 		status = getTranscriptionStatus(job)
 		if status in states:
 			break
-		time.sleep(5)
+		sleep(5)
 	return status
 
+# Delete a transcribe job
 def deleteTranscriptionJob(job):
 	try:
 		ts.delete_transcription_job(TranscriptionJobName = job)
@@ -69,6 +74,7 @@ def deleteTranscriptionJob(job):
 		print(error)
 		return True, error
 
+# Fetch a transcribe job's output file from a bucket and store it
 def fetchTranscript(bucket, job):
 	bucketPath = "{}{}.json".format(transcriptDir, job)
 	filePath = "/tmp/{}.json".format(job)
@@ -85,6 +91,7 @@ def fetchTranscript(bucket, job):
 		print(error)
 		return True, "An error occured when fetching the transcript"
 
+# Remove temp transcript file
 def deleteTranscript(job):
 	filePath = "/tmp/{}.json".format(job)
 
@@ -95,12 +102,14 @@ def deleteTranscript(job):
 		print(error)
 		return True, error
 
+# Extract the transcribed text from the transcript data
 def getTranscriptText(transcript):
 	try:
 		return False, transcript["results"]["transcripts"][0]["transcript"]
 	except Exception:
 		return True, "Couldn't get transcript text!"
 
+# Perform sentiment analysis on a transcript
 def getSentimentAnalysis(transcript):
 	err, text = getTranscriptText(transcript)
 
@@ -117,6 +126,7 @@ def getSentimentAnalysis(transcript):
 		print(error)
 		return True, error
 
+# Insert sentiment analysis results of a file in a database
 def addSentimentToDynamo(fileName, sentiment):
 	try:
 		db.put_item(
@@ -145,10 +155,12 @@ def addSentimentToDynamo(fileName, sentiment):
 		return True, error
 
 # https://stackoverflow.com/questions/6478875/regular-expression-matching-e-164-formatted-phone-numbers
+# Check if the paramterised phone number is in a valid E.164 format
 def isPhoneValid(phoneNumber):
 	pattern = re.compile("^\+[1-9]\d{1,14}$")
 	return pattern.match(phoneNumber) is not None
 
+# Use Amazon SNS to send a text message to a specified phone number
 def sendMessage(subject, message):
 	phoneNumber = os.environ["PhoneNumber"]
 
@@ -159,6 +171,14 @@ def sendMessage(subject, message):
 			Subject = subject
 		)
 
+# Entry function
+# Extract notifcation
+# Transcribe an audio file
+# Fetch the transcribe result
+# Perform sentiment analysis
+# Store analysis in a database
+# Send text message on Negative sentiment
+# Perform cleanup
 def handler(event, context):
 	if not event:
 		return {
