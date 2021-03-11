@@ -1,13 +1,9 @@
-# Format *.py files to be used in a cloud formation template
+# Inject and minify *.py files into cloud formation lambda functions
 
 import os
 import json
 import python_minifier
 
-scriptName = os.path.basename(__file__)
-scriptDir = os.path.dirname(__file__)
-outputDir = os.path.join(scriptDir, "output")
-output = {}
 
 def getFiles():
 	py = []
