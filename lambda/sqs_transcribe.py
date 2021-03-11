@@ -5,6 +5,7 @@ import os
 import boto3
 import json
 import time
+import re
 from botocore.exceptions import ClientError
 
 transcriptDir = "transcriptions/"
@@ -12,6 +13,7 @@ ts = boto3.client("transcribe")
 s3 = boto3.client("s3")
 comp = boto3.client("comprehend")
 db = boto3.client("dynamodb")
+sns = boto3.client("sns")
 
 def getEventData(event):
 	try:
@@ -142,6 +144,23 @@ def addSentimentToDynamo(fileName, sentiment):
 		print(error)
 		return True, error
 
+# https://stackoverflow.com/questions/6478875/regular-expression-matching-e-164-formatted-phone-numbers
+def isPhoneValid(phoneNumber) {
+	pattern = re.compile("^\+[1-9]\d{1,14}$")
+	return pattern.match(phoneNumber) is not None
+}
+
+def sendMessage(subject, message) {
+	phoneNumber = os.environ["PhoneNumber"]
+
+	if isPhoneValid(phoneNumber):
+		sns.publish(
+			PhoneNumber = phoneNumber,
+			Message = message,
+			Subject = subject
+		)
+}
+
 def handler(event, context):
 	if not event:
 		return {
@@ -232,6 +251,13 @@ def handler(event, context):
 			"statusCode": 500,
 			"body": json.dumps(msg)
 		}
+
+	if sentiment["Sentiment"].lower() == "negative":
+		sendMessage("Alert: Sentiment Analysis", """Negative result found!
+		File: {}
+		Data: {}
+		Transcript: {}
+		""".format(file, sentiment["SentimentScore"]["Negative"], transcript["results"]["transcripts"][0]["transcript"]))
 
 	return {
 		"statusCode": 200,

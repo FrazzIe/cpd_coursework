@@ -58,6 +58,13 @@ if stackExists(settings["stack"]):
 stackId = cloudFormation.create_stack(
 	StackName = settings["stack"],
 	TemplateBody = json.dumps(cfTemplate),
+	Parameters = [
+		{
+			"ParameterKey": "SentimentPhoneNumber",
+			"ParameterValue": settings["phoneNumber"],
+			"UsePreviousValue": False
+		}
+	],
 	TimeoutInMinutes = 15,
 	OnFailure = "DO_NOTHING",
 	Capabilities = [ "CAPABILITY_NAMED_IAM" ]

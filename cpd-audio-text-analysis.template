@@ -181,6 +181,13 @@
                     }
                 },
                 "Handler": "index.handler",
+                "Environment": {
+                    "Variables": {
+                        "PhoneNumber": {
+                            "Ref": "SentimentPhoneNumber"
+                        }
+                    }
+                },
                 "Timeout": 60
             },
             "Metadata": {
@@ -437,6 +444,13 @@
                     "id": "e9262b07-b5cc-4409-8486-6f62a20efbf4"
                 }
             }
+        }
+    },
+    "Parameters": {
+        "SentimentPhoneNumber": {
+            "Type": "String",
+            "Default": "",
+            "Description": "A E.164 spec. phone number for sentiment analysis alerts"
         }
     }
 }
