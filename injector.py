@@ -5,12 +5,18 @@ import json
 import python_minifier
 
 
-def getFiles():
+# Gets a list of a *.py files in the lambda function directory
+def getFiles(srcDir):
 	py = []
-	with os.scandir(scriptDir) as files:
+
+	if not os.path.isdir(srcDir):
+		print("Error: lambda function directory doesn't exist!")
+		return py
+
+	with os.scandir(srcDir) as files:
 		for file in files:
-			if file.name.endswith(".py") and file.name != scriptName:
-				py.append({ "path": file.path, "name": file.name })
+			if file.name.endswith(".py"):
+				py.append({ "path": file.path, "name": getFileName(file.name) })
 	return py
 
 def getFileName(name):
@@ -27,10 +33,7 @@ def populateFile(lines):
 
 	return obj
 
-for script in getFiles():
-	with open(script["path"], "r") as file:
-		minified = python_minifier.minify(file.read(), remove_literal_statements=True, rename_globals=True, preserve_globals=["handler"])
-		data = populateFile(minified.splitlines())
-		name = getFileName(script["name"])
-		with open(os.path.join(outputDir, name), "w") as outfile:
-			json.dump(data, outfile, indent = 4)
+
+# Injects minified lambda function code into a CloudFormation template
+def injectLambdaCode(path, template):
+	lambdaFiles = getFiles(path)
