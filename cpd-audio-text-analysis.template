@@ -95,7 +95,7 @@
         }
     },
     "Resources": {
-        "Bucket": {
+        "S1916169Bucket": {
             "Type": "AWS::S3::Bucket",
             "Properties": {
                 "BucketName": "cpd-audio-text-analysis-bucket",
@@ -119,7 +119,7 @@
                             },
                             "Queue": {
                                 "Fn::GetAtt": [
-                                    "Queue",
+                                    "S1916169Queue",
                                     "Arn"
                                 ]
                             }
@@ -133,23 +133,23 @@
                 }
             },
             "DependsOn": [
-                "QueuePolicy"
+                "S1916169QueuePolicy"
             ]
         },
-        "TranscribeEventSourceMapping": {
+        "S1916169LambdaEventSourceMapping": {
             "Type": "AWS::Lambda::EventSourceMapping",
             "Properties": {
                 "Enabled": true,
                 "BatchSize": 1,
                 "EventSourceArn": {
                     "Fn::GetAtt": [
-                        "Queue",
+                        "S1916169Queue",
                         "Arn"
                     ]
                 },
                 "FunctionName": {
                     "Fn::GetAtt": [
-                        "TranscribeFunction",
+                        "S1916169LambdaFunction",
                         "Arn"
                     ]
                 }
@@ -160,12 +160,12 @@
                 }
             }
         },
-        "TranscribeFunction": {
+        "S1916169LambdaFunction": {
             "Type": "AWS::Lambda::Function",
             "Properties": {
                 "Role": {
                     "Fn::GetAtt": [
-                        "TranscribeExecutionRole",
+                        "S1916169LambdaExecutionRole",
                         "Arn"
                     ]
                 },
@@ -294,7 +294,7 @@
                 }
             }
         },
-        "TranscribeExecutionRole": {
+        "S1916169LambdaExecutionRole": {
             "Type": "AWS::IAM::Role",
             "Properties": {
                 "AssumeRolePolicyDocument": {
@@ -337,7 +337,7 @@
                                     "Effect": "Allow",
                                     "Resource": {
                                         "Fn::GetAtt": [
-                                            "Queue",
+                                            "S1916169Queue",
                                             "Arn"
                                         ]
                                     }
@@ -377,7 +377,7 @@
                                             [
                                                 {
                                                     "Fn::GetAtt": [
-                                                        "Bucket",
+                                                        "S1916169Bucket",
                                                         "Arn"
                                                     ]
                                                 },
@@ -393,7 +393,7 @@
                                     "Effect": "Allow",
                                     "Resource": {
                                         "Fn::GetAtt": [
-                                            "Bucket",
+                                            "S1916169Bucket",
                                             "Arn"
                                         ]
                                     }
@@ -426,7 +426,7 @@
                                     "Effect": "Allow",
                                     "Resource": {
                                         "Fn::GetAtt": [
-                                            "DynamoDB",
+                                            "S1916169DynamoDB",
                                             "Arn"
                                         ]
                                     }
@@ -456,7 +456,7 @@
                 }
             }
         },
-        "Queue": {
+        "S1916169Queue": {
             "Type": "AWS::SQS::Queue",
             "Properties": {
                 "DelaySeconds": 0,
@@ -468,12 +468,12 @@
                 }
             }
         },
-        "QueuePolicy": {
+        "S1916169QueuePolicy": {
             "Type": "AWS::SQS::QueuePolicy",
             "Properties": {
                 "Queues": [
                     {
-                        "Ref": "Queue"
+                        "Ref": "S1916169Queue"
                     }
                 ],
                 "PolicyDocument": {
@@ -489,7 +489,7 @@
                             ],
                             "Resource": {
                                 "Fn::GetAtt": [
-                                    "Queue",
+                                    "S1916169Queue",
                                     "Arn"
                                 ]
                             },
@@ -516,7 +516,7 @@
                 }
             }
         },
-        "DynamoDB": {
+        "S1916169DynamoDB": {
             "Type": "AWS::DynamoDB::Table",
             "Properties": {
                 "AttributeDefinitions": [
