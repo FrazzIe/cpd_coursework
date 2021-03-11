@@ -71,32 +71,26 @@
                     "height": 60
                 },
                 "position": {
-                    "x": 370,
+                    "x": 360,
                     "y": 120
                 },
-                "z": 0,
+                "z": 1,
                 "embeds": [],
                 "isassociatedwith": [
                     "6b35d329-684e-424f-86af-ab6557c610db"
                 ]
             },
-            "28b341c4-5727-43cb-a00f-46ac2c93c863": {
-                "source": {
-                    "id": "448812fb-8aa7-404f-a58b-01a7fdb47acb"
+            "e9262b07-b5cc-4409-8486-6f62a20efbf4": {
+                "size": {
+                    "width": 60,
+                    "height": 60
                 },
-                "target": {
-                    "id": "3ef56bb2-2e51-42fb-b2a9-8e8e06afbc97"
+                "position": {
+                    "x": 540,
+                    "y": 540
                 },
-                "z": 11
-            },
-            "38ba2ca7-c1ab-4675-be4b-d5c09cd2eafb": {
-                "source": {
-                    "id": "448812fb-8aa7-404f-a58b-01a7fdb47acb"
-                },
-                "target": {
-                    "id": "340f8808-75b3-4d38-afd8-7ea27ef74519"
-                },
-                "z": 11
+                "z": 1,
+                "embeds": []
             }
         }
     },
@@ -315,6 +309,26 @@
                                 }
                             ]
                         }
+                    },
+                    {
+                        "PolicyName": "allowDynamo",
+                        "PolicyDocument": {
+                            "Statement": [
+                                {
+                                    "Action": [
+                                        "DynamoDB:PutItem"
+                                    ],
+                                    "Effect": "Allow",
+                                    "Resource": {
+                                        "Fn::GetAtt": [
+                                            "DynamoDB",
+                                            "Arn"
+                                        ]
+                                    }
+                                }
+                            ]
+                        }
+                        }
                     }
                 ]
             },
@@ -381,6 +395,33 @@
             "Metadata": {
                 "AWS::CloudFormation::Designer": {
                     "id": "73ef2899-7672-4218-8184-6322afea69ed"
+                }
+            }
+        },
+        "DynamoDB": {
+            "Type": "AWS::DynamoDB::Table",
+            "Properties": {
+                "AttributeDefinitions": [
+                    {
+                        "AttributeName": "FileName",
+                        "AttributeType": "S"
+                    }
+                ],
+                "KeySchema": [
+                    {
+                        "AttributeName": "FileName",
+                        "KeyType": "HASH"
+                    }
+                ],
+                "ProvisionedThroughput": {
+                    "ReadCapacityUnits": "5",
+                    "WriteCapacityUnits": "5"
+                },
+                "TableName": "SentimentTable"
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "e9262b07-b5cc-4409-8486-6f62a20efbf4"
                 }
             }
         }
