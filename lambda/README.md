@@ -1,7 +1,5 @@
 # Lambda
 
-This directory contains all scripts that are used in the CloudFormation template. Each script can be found in the template as in-line python.
+This directory contains all scripts that are used in the CloudFormation template.
 
-# format.py
-
-This script is used to convert .py scripts in this directory into JSON template format for CloudFormation to use
+Each script is named after it's logical resource name within the CloudFormation template and is automatically injected before stack creation.
