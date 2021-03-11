@@ -42,3 +42,6 @@ def injectLambdaCode(path, template):
 		print("Error: Invalid CloudFormation template")
 		return template
 
+	for script in lambdaFiles:
+		if script["name"] in template["Resources"]:
+	return template
