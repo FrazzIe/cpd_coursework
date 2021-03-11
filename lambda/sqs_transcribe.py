@@ -145,12 +145,11 @@ def addSentimentToDynamo(fileName, sentiment):
 		return True, error
 
 # https://stackoverflow.com/questions/6478875/regular-expression-matching-e-164-formatted-phone-numbers
-def isPhoneValid(phoneNumber) {
+def isPhoneValid(phoneNumber):
 	pattern = re.compile("^\+[1-9]\d{1,14}$")
 	return pattern.match(phoneNumber) is not None
-}
 
-def sendMessage(subject, message) {
+def sendMessage(subject, message):
 	phoneNumber = os.environ["PhoneNumber"]
 
 	if isPhoneValid(phoneNumber):
@@ -159,7 +158,6 @@ def sendMessage(subject, message) {
 			Message = message,
 			Subject = subject
 		)
-}
 
 def handler(event, context):
 	if not event:
