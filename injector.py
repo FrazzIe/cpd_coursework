@@ -37,3 +37,8 @@ def populateFile(lines):
 # Injects minified lambda function code into a CloudFormation template
 def injectLambdaCode(path, template):
 	lambdaFiles = getFiles(path)
+
+	if not "Resources" in template:
+		print("Error: Invalid CloudFormation template")
+		return template
+
