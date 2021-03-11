@@ -1,36 +1,36 @@
 import os
 import json
-import time
 import boto3
+from time import sleep
 from botocore.exceptions import ClientError
+from injector import injectLambdaCode
 
-cloudFormation = boto3.client("cloudformation")
-s3 = boto3.client("s3")
-
+# Load JSON files
 def loadJSON(path):
-	obj = None
-
 	try:
 		with open(path, "r") as file:
 			data = file.read()
-			obj = json.loads(data)
+			return json.loads(data)
 	except FileNotFoundError:
 		print("File not found: {}".format(path))
-		raise SystemExit
+	except Exception:
+		print("Something went wrong when loading: {}".format(path))
 
-	return obj
+	raise SystemExit()
 
-#https://stackoverflow.com/questions/23019166/boto-what-is-the-best-way-to-check-if-a-cloudformation-stack-is-exists
-def stackStatus(name):
+# https://stackoverflow.com/questions/23019166/boto-what-is-the-best-way-to-check-if-a-cloudformation-stack-is-exists
+# Get status of a named stack
+def getStackStatus(cf, name):
 	try:
-		data = cloudFormation.describe_stacks(StackName = name)
+		data = cf.describe_stacks(StackName = name)
 	except ClientError:
 		return "CLIENT_ERROR"
 
 	return data["Stacks"][0]["StackStatus"]
 
-def stackExists(name):
-	status = stackStatus(name)
+# Check if a named stack exists
+def doesStackExist(cf, name):
+	status = getStackStatus(cf, name)
 	switch = {
 		"CLIENT_ERROR": False,
 		"CREATE_FAILED": False,
@@ -40,64 +40,103 @@ def stackExists(name):
 
 	return switch.get(status, True)
 
-def getAudioFiles():
+# Create a CloudFormation stack with a template
+def createStack(cf, setting, template):
+	waitCount = 0
+	updateTime = 5
+	currentStatus = None
+
+	cf.create_stack(
+		StackName = setting["stackName"],
+		TemplateBody = json.dumps(template),
+		Parameters = [
+			{
+				"ParameterKey": "SentimentPhoneNumber",
+				"ParameterValue": setting["phoneNumber"],
+				"UsePreviousValue": False
+			}
+		],
+		TimeoutInMinutes = 20,
+		OnFailure = "DELETE",
+		Capabilities = [ "CAPABILITY_NAMED_IAM" ]
+	)
+
+	while True:
+		if waitCount % updateTime == 0:
+			currentStatus = getStackStatus(cf, setting["stackName"])
+			exists = getStackStatus(cf, setting["stackName"])
+
+			if exists and currentStatus == "CREATE_COMPLETE":
+				print("\nStack created!")
+				return True
+			elif not exists:
+				print("\nStack creation failed.. terminating")
+				return False
+		sleep(1)
+		waitCount = waitCount + 1
+		print(">> [ {} ] Status: {}, Seconds elapsed: {}".format("/" if waitCount % 2 else "\\", currentStatus, waitCount), end = "\r")
+
+# Gets a list of a *.mp3 files to be uploaded
+def getAudioFiles(srcDir):
 	audio = []
-	with os.scandir("input") as files:
+
+	if not os.path.isdir(srcDir):
+		print("Error: audio directory doesn't exist!")
+		return audio
+
+	with os.scandir(srcDir) as files:
 		for file in files:
 			if file.name.endswith(".mp3"):
 				audio.append(file.path)
+
 	return audio
 
-settings = loadJSON("settings.json")
-cfTemplate = loadJSON("{}.template".format(settings["stack"]))
+# Upload a file to a specified bucket directory
+def uploadFile(s3, bucket, filePath, uploadPath):
+	fileName = os.path.basename(filePath)
 
-if stackExists(settings["stack"]):
-	print("Stack already exists: {}".format(settings["stack"]))
-	raise SystemExit
+	try:
+		s3.upload_file(filePath, bucket, uploadPath.format(fileName))
+		return True
+	except Exception:
+		print("Error: {} failed to upload", fileName)
 
-stackId = cloudFormation.create_stack(
-	StackName = settings["stack"],
-	TemplateBody = json.dumps(cfTemplate),
-	Parameters = [
-		{
-			"ParameterKey": "SentimentPhoneNumber",
-			"ParameterValue": settings["phoneNumber"],
-			"UsePreviousValue": False
-		}
-	],
-	TimeoutInMinutes = 15,
-	OnFailure = "DO_NOTHING",
-	Capabilities = [ "CAPABILITY_NAMED_IAM" ]
-)
+	return False
 
-waitCount = 0
-updateTime = 5
-currentStatus = None
+# Load config files
+# Inject python into CloudFormation Lambda Functions
+# Create a CloudFormation stack
+# Upload audio files to a bucket
+def main():
+	settings = loadJSON("settings.json")
+	template = loadJSON("{}.template".format(settings["stackName"]))
 
-while True:
-	if waitCount % updateTime == 0:
-		currentStatus = stackStatus(settings["stack"])
-		exists = stackExists(settings["stack"])
+	cf = boto3.client("cloudformation")
+	s3 = boto3.client("s3")
 
-		if exists and currentStatus == "CREATE_COMPLETE":
-			print("\nStack created!")
-			break
-		elif not exists:
-			print("\nStack creation failed.. terminating")
-			raise SystemExit
-	time.sleep(1)
-	waitCount = waitCount + 1
-	print(">> [ {} ] Status: {}, Seconds elapsed: {}".format("/" if waitCount % 2 else "\\", currentStatus, waitCount), end = "\r")
+	if doesStackExist(cf, settings["stackName"]):
+		print("Stack already exists: {}".format(settings["stackName"]))
+		return
 
-audioFiles = getAudioFiles()
+	template = injectLambdaCode(settings["lambdaLocation"], template)
 
-for file in audioFiles:
-	s3.upload_file(file, "{}-bucket".format(settings["stack"]), "audio/{}".format(os.path.basename(file)))
-	waitCount = 0
-	while True:
-		print(">> [ {} ] File: {}, Seconds elapsed: {}/30".format("/" if waitCount % 2 else "\\", file, waitCount), end = "\r")
-		if waitCount == 30:
-			print("\nFinished: {}".format(file))
-			break
-		time.sleep(1)
-		waitCount = waitCount + 1
+	if not createStack(cf, settings, template):
+		return
+
+	audioFiles = getAudioFiles(settings["audioLocation"])
+
+	for file in audioFiles:
+		waitCount = 0
+		updateTime = 5
+		success = uploadFile(s3, "{}-bucket".format(settings["stackName"]), file, "audio/{}")
+		if success:
+			while True:
+				print(">> [ {} ] File: {}, Seconds elapsed: {}/{}".format("/" if waitCount % 2 else "\\", file, waitCount, settings["secondsBetweenUploads"]), end = "\r")
+				if waitCount == settings["secondsBetweenUploads"]:
+					print("\nFinished: {}".format(file))
+					break
+				sleep(1)
+				waitCount = waitCount + 1
+
+if __name__ == "__main__":
+	main()

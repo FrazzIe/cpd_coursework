@@ -1,4 +1,6 @@
 {
-	"stack": "cpd-audio-text-analysis",
-	"phoneNumber": "+ZZZZZZZZZZZZ"
+	"lambdaLocation": "lambda",
+	"audioLocation": "input",
+	"secondsBetweenUploads": 30,
+	"stackName": "cpd-audio-text-analysis",
 }
