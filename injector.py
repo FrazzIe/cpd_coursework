@@ -43,6 +43,19 @@ def minifyScript(code):
 		print("Error: lambda code minification failed")
 	return "#An error occured here"
 
+# Adds the minified JSON object into the template with error checking
+def addScriptToTemplate(resource, script, template):
+	if not "Properties" in template["Resources"][resource]:
+		template["Resources"][resource]["Properties"] = {}
+	if not "Code" in template["Resources"][resource]["Properties"]:
+		template["Resources"][resource]["Properties"]["Code"] = {}
+	if not "ZipFile" in template["Resources"][resource]["Properties"]["Code"]:
+		template["Resources"][resource]["Properties"]["Code"]["ZipFile"] = {}
+
+	template["Resources"][script]["Properties"]["Code"]["ZipFile"] = script
+
+	return template
+
 # Injects minified lambda function code into a CloudFormation template
 def injectLambdaCode(path, template):
 	lambdaFiles = getFiles(path)
