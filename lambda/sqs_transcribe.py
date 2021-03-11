@@ -11,6 +11,7 @@ transcriptDir = "transcriptions/"
 ts = boto3.client("transcribe")
 s3 = boto3.client("s3")
 comp = boto3.client("comprehend")
+db = boto3.client("dynamodb")
 
 def getEventData(event):
 	try:
@@ -114,6 +115,33 @@ def getSentimentAnalysis(transcript):
 		print(error)
 		return True, error
 
+def addSentimentToDynamo(fileName, sentiment):
+	try:
+		db.put_item(
+			TableName = "SentimentTable",
+			Item = {
+				"FileName": {
+					"S": fileName
+				},
+				"Sentiment": {
+					"S": sentiment["Sentiment"]
+				},
+				"Positive": {
+					"N": str(sentiment["SentimentScore"]["Positive"])
+				},
+				"Negative": {
+					"N": str(sentiment["SentimentScore"]["Negative"])
+				},
+				"Mixed": {
+					"N": str(sentiment["SentimentScore"]["Mixed"])
+				}
+			}
+		)
+		return False, ""
+	except ClientError as error:
+		print(error)
+		return True, error
+
 def handler(event, context):
 	if not event:
 		return {
@@ -194,6 +222,17 @@ def handler(event, context):
 			"statusCode": 500,
 			"body": json.dumps(msg)
 		}
+
+	err, errMsg = addSentimentToDynamo(file, sentiment)
+
+	if err:
+		msg = "Error occurred: {}".format(errMsg)
+		print(msg)
+		return {
+			"statusCode": 500,
+			"body": json.dumps(msg)
+		}
+
 	return {
 		"statusCode": 200,
 		"body": json.dumps("Transcription {} created".format(job))
