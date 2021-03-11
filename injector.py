@@ -68,7 +68,7 @@ def injectLambdaCode(path, template):
 		if script["name"] in template["Resources"]:
 			try:
 				with open(script["path"], "r") as file:
-					minified = minifyScript(code)
+					minified = minifyScript(file.read())
 					data = populateFile(minified.splitlines())
 					template = addScriptToTemplate(script["name"], data, template)
 			except FileNotFoundError:
