@@ -187,6 +187,13 @@ def handler(event, context):
 
 	err, sentiment = getSentimentAnalysis(transcript)
 
+	if err:
+		msg = "Error occurred: {}".format(sentiment)
+		print(msg)
+		return {
+			"statusCode": 500,
+			"body": json.dumps(msg)
+		}
 	return {
 		"statusCode": 200,
 		"body": json.dumps("Transcription {} created".format(job))
