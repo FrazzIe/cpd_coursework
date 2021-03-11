@@ -66,4 +66,13 @@ def injectLambdaCode(path, template):
 
 	for script in lambdaFiles:
 		if script["name"] in template["Resources"]:
+			try:
+				with open(script["path"], "r") as file:
+					minified = minifyScript(code)
+					data = populateFile(minified.splitlines())
+					template = addScriptToTemplate(script["name"], data, template)
+			except FileNotFoundError:
+				print("Error: {}.py was not found at [{}]".format(script["name"], script["path"]))
+			except Exception:
+				print("Error: Injection of {}.py failed".format(script["name"]))
 	return template
