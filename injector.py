@@ -52,7 +52,7 @@ def addScriptToTemplate(resource, script, template):
 	if not "ZipFile" in template["Resources"][resource]["Properties"]["Code"]:
 		template["Resources"][resource]["Properties"]["Code"]["ZipFile"] = {}
 
-	template["Resources"][script]["Properties"]["Code"]["ZipFile"] = script
+	template["Resources"][resource]["Properties"]["Code"]["ZipFile"] = script
 
 	return template
 
