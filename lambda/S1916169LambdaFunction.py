@@ -171,6 +171,14 @@ def sendMessage(subject, message):
 			Subject = subject
 		)
 
+def getResponse(code, message, printMessage = False):
+	if printMessage:
+		print("Response: {}".format(message))
+	return {
+		"statusCode": code,
+		"body": json.dumps(message)
+	}
+
 # Entry function
 # Extract notifcation
 # Transcribe an audio file
@@ -181,94 +189,45 @@ def sendMessage(subject, message):
 # Perform cleanup
 def handler(event, context):
 	if not event:
-		return {
-			"statusCode": 500,
-			"body": json.dumps("Event undefined")
-		}
+		return getResponse(500, "Event undefined", True)
 
 	err, data = getEventData(event)
-
 	if err:
-		print("Error occurred: {}".format(data))
-		return {
-			"statusCode": 500,
-			"body": json.dumps("Error occurred: {}".format(data))
-		}
+		return getResponse(500, data, True)
 
 	bucket = data["s3"]["bucket"]["name"]
 	file = data["s3"]["object"]["key"]
 	job = context.aws_request_id
 
 	if not bucket or not file:
-		return {
-			"statusCode": 500,
-			"body": json.dumps("Couldn't find bucket/file")
-		}
+		return getResponse(500, "Couldn't find bucket/file", True)
 	elif not job:
-		return {
-			"statusCode": 500,
-			"body": json.dumps("Couldn't find job id")
-		}
+		return getResponse(500, "Couldn't find job id", True)
 
 	status = startTranscriptionJob(bucket, file, job)
 
 	if status != "COMPLETED":
-		msg = "Transcription {} is incomplete with status: {}".format(job, status)
-		print(msg)
-		return {
-			"statusCode": 500,
-			"body": json.dumps(msg)
-		}
+		return getResponse(500, "Transcription {} is incomplete with status: {}".format(job, status), True)
 
 	err, transcript = fetchTranscript(bucket, job)
-
 	if err:
-		msg = "Error occurred: {}".format(transcript)
-		print(msg)
-		return {
-			"statusCode": 500,
-			"body": json.dumps(msg)
-		}
+		return getResponse(500, transcript, True)
 
 	err, errMsg = deleteTranscriptionJob(job)
-
 	if err:
-		msg = "Error occurred: {}".format(errMsg)
-		print(msg)
-		return {
-			"statusCode": 500,
-			"body": json.dumps(msg)
-		}
+		return getResponse(500, errMsg, True)
 
 	err, errMsg = deleteTranscript(job)
-
 	if err:
-		msg = "Error occurred: {}".format(errMsg)
-		print(msg)
-		return {
-			"statusCode": 500,
-			"body": json.dumps(msg)
-		}
+		return getResponse(500, errMsg, True)
 
 	err, sentiment = getSentimentAnalysis(transcript)
-
 	if err:
-		msg = "Error occurred: {}".format(sentiment)
-		print(msg)
-		return {
-			"statusCode": 500,
-			"body": json.dumps(msg)
-		}
+		return getResponse(500, sentiment, True)
 
 	err, errMsg = addSentimentToDynamo(file, sentiment)
-
 	if err:
-		msg = "Error occurred: {}".format(errMsg)
-		print(msg)
-		return {
-			"statusCode": 500,
-			"body": json.dumps(msg)
-		}
+		return getResponse(500, errMsg, True)
 
 	if sentiment["Sentiment"].lower() == "negative":
 		sendMessage("Alert: Sentiment Analysis", """Negative result found!
@@ -277,7 +236,4 @@ def handler(event, context):
 		Transcript: {}
 		""".format(file, sentiment["SentimentScore"]["Negative"], transcript["results"]["transcripts"][0]["transcript"]))
 
-	return {
-		"statusCode": 200,
-		"body": json.dumps("Transcription {} created".format(job))
-	}
+	return getResponse(200, "ok", True)
