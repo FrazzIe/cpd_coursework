@@ -3,4 +3,5 @@
 	"audioLocation": "input",
 	"secondsBetweenUploads": 30,
 	"stackName": "cpd-audio-text-analysis",
+	"phoneNumber": "<insert number>"
 }
